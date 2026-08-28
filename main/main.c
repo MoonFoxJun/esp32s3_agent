@@ -7,6 +7,7 @@
 #include "esp_err.h"
 #include "esp_heap_caps.h"
 
+#include "config.h"
 #include "wifi_manager.h"
 #include "llm_client.h"
 #include "serial_console.h"
@@ -29,21 +30,7 @@
 
 static const char *TAG = "sample_agent";
 
-/* ========== 阶段2: LLM 通信 ========== */
-
-/* LLM 配置信息
- * 发布前请替换为自己的 Key！API Key 可申请自：
- * - DeepSeek (platform.deepseek.com)
- * - 阿里云通义千问 (dashscope.aliyuncs.com)
- * - OpenAI (openai.com)
- */
-#define LLM_BASE_URL  "https://api.deepseek.com/v1"   // 替换为你的 API 地址
-#define LLM_API_KEY   "YOUR_DEEPSEEK_API_KEY"         // 替换为你的 API Key（勿公开！）
-#define LLM_MODEL     "deepseek-chat"                 // 替换为你的模型名称
-
-/* ========== 阶段4.2: LLM 工具定义 ========== */
-
-/* 按"栈余量从少到多"排序：最危险的排最前面 */
+/* 任务栈余量升序比较（最危险的排最前）*/
 static int cmp_by_free_stack(const void *a, const void *b)
 {
     const TaskStatus_t *ta = (const TaskStatus_t *)a;
@@ -51,7 +38,7 @@ static int cmp_by_free_stack(const void *a, const void *b)
     return (int)ta->usStackHighWaterMark - (int)tb->usStackHighWaterMark;
 }
 
-/* 内存体检工具：堆 + 每个任务的栈余量（余量 < 1KB 标 !! 危险）*/
+/* 内存体检工具：堆 + 各任务栈余量（<1KB 标危险）*/
 static esp_err_t tool_device_info(const char *args_json, char *out, size_t out_sz)
 {
     size_t free_internal = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
@@ -105,14 +92,10 @@ void app_main(void)
     bool has_wifi_config = wifi_manager_load_config(ssid, sizeof(ssid),
                                                      password, sizeof(password));
 
-    /* 3. 如果没有保存的配置，使用默认配置（请改成自己的 WiFi）*/
+    /* 3. 没有存档则用 config.h 里的默认 WiFi */
     if (!has_wifi_config) {
-        const char *default_ssid = "YOUR_WIFI_SSID";
-        const char *default_password = "YOUR_WIFI_PASSWORD";
-        strncpy(ssid, default_ssid, sizeof(ssid) - 1);
-        strncpy(password, default_password, sizeof(password) - 1);
-
-        /* 保存到 NVS，下次启动自动连接 */
+        strncpy(ssid, WIFI_SSID, sizeof(ssid) - 1);
+        strncpy(password, WIFI_PASSWORD, sizeof(password) - 1);
         wifi_manager_save_config(ssid, password);
     }
 
@@ -137,20 +120,16 @@ void app_main(void)
         ESP_LOGE(TAG, "Failed to init LLM client: %s", esp_err_to_name(err));
     }
 
-    /* 6.1 设置 System Prompt（给 LLM 设定行为/人设）
-     *     来源：NVS 里有用户保存过的（set_persona 工具改的）就用存档，
-     *     否则用默认人设。存档优先级高，改过就永久生效、断电不丢。 */
+    /* 6.1 人设：NVS 有存档（set_persona 改过）用存档，否则用默认 */
     if (!llm_client_has_saved_prompt()) {
         llm_client_set_system_prompt(
             "你是一个运行在 ESP32 微型设备上的智能助手。"
             "请保持回答简洁（50字以内），因为设备显示和存储能力有限。"
             "如果用户没有指定语言，请用中文回答。"
         );
-    } else {
-        ESP_LOGI(TAG, "Using saved persona from NVS");
     }
 
-    /* 6.2 注册 LLM 可调用工具（Phase 4.2/4.3/4.5/6）*/
+    /* 6.2 注册 LLM 可调用工具 */
     agent_tools_register(&s_tool_device_info);
     led_tool_register();
     lua_engine_init();       /* Lua 运行时（LLM 写脚本执行）*/
@@ -167,8 +146,11 @@ void app_main(void)
     serial_console_printf("Type a message and press Enter to chat with LLM\n");
     serial_console_printf("Commands: clear (clear history)\n");
 
-    /* 7.1 初始化 ST7789 屏幕（颜色通道已调通，无需闪烁自检）*/
+    /* 7.1 初始化 ST7789 屏幕 + 铺白底
+     *     GIF（240x240）在 320x240 横屏上居中，白底边框更好看；
+     *     也避免 GIF 分区数据缺失时屏幕显示 GRAM 随机噪声（花屏）*/
     screen_init();
+    screen_fill(0xFFFF);   /* 白色背景 */
 
     /* 7.2 挂载技能存储（FATFS，/storage；失败不影响主功能）*/
     skill_store_init();

@@ -32,13 +32,15 @@ esp_err_t skill_store_init(void)
         return ESP_OK;
     }
 
-    /* 挂载 storage 分区为 FATFS（首次启动会自动格式化）*/
+    /* 挂载 storage 分区为 FATFS（首次启动会自动格式化）
+     * 注意参数顺序：IDF 6.0 是 (base_path, partition_label)，
+     * 写反会导致拿 "/storage" 当标签去找分区而失败。 */
     esp_vfs_fat_mount_config_t cfg = {
         .format_if_mount_failed = true,
         .max_files = 8,
         .allocation_unit_size = CONFIG_WL_SECTOR_SIZE,
     };
-    esp_err_t err = esp_vfs_fat_spiflash_mount_rw_wl("storage", STORAGE_MOUNT,
+    esp_err_t err = esp_vfs_fat_spiflash_mount_rw_wl(STORAGE_MOUNT, "storage",
                                                      &cfg, &s_wl);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "mount /storage failed: %s", esp_err_to_name(err));

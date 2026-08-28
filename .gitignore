@@ -66,6 +66,9 @@ env/
 .ccls-cache/
 compile_commands.json
 
+# Local secrets (copy from main/config.h.example)
+main/config.h
+
 # Windows specific
 Thumbs.db
 ehthumbs.db

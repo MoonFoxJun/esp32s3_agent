@@ -1,0 +1,13 @@
+#pragma once
+/* 配置模板：复制本文件为 config.h 并填入真实值。
+ * config.h 已被 .gitignore 忽略，不会提交，密钥不会泄露。 */
+
+#define LLM_BASE_URL  "https://api.deepseek.com/v1"
+#define LLM_API_KEY   "YOUR_DEEPSEEK_API_KEY"
+#define LLM_MODEL     "deepseek-chat"
+
+#define WIFI_SSID     "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+
+#define QQ_APP_ID     "YOUR_QQ_APP_ID"
+#define QQ_APP_SECRET "YOUR_QQ_APP_SECRET"

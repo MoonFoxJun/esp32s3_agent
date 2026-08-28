@@ -14,13 +14,11 @@
 #include "freertos/task.h"
 
 #include "agent_core.h"
+#include "config.h"
 
 static const char *TAG = "qq_channel";
 
-/* ========== QQ 机器人凭证（QQ 开放平台 q.qq.com 开发者后台获取，勿公开！）========== */
-#define QQ_APP_ID        "YOUR_QQ_APP_ID"
-#define QQ_APP_SECRET    "YOUR_QQ_APP_SECRET"
-
+/* ========== QQ 机器人凭证（见 config.h，勿公开！）========== */
 #define QQ_TOKEN_URL     "https://bots.qq.com/app/getAppAccessToken"
 #define QQ_API_BASE      "https://api.sgroup.qq.com"
 

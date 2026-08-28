@@ -71,10 +71,8 @@ esp_err_t gif_player_init(void)
         return ESP_ERR_INVALID_ARG;
     }
 
-    /* 3. 准备帧缓冲（必须用内部 RAM：SPI DMA 只能访问内部 SRAM）*/
+    /* 3. 帧缓冲放 PSRAM（screen.c 已开 psram_dma_direct，DMA 可直读）*/
     s_frame_bytes = s_hdr.width * s_hdr.height * 2;
-    /* 帧缓冲放 PSRAM：screen.c 已开 psram_dma_direct，SPI DMA 可直接读。
-     * 之前占内部 RAM（115KB），把内部 RAM 留给 TLS/网络。*/
     s_fb = heap_caps_malloc(s_frame_bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if (!s_fb) {
         ESP_LOGE(TAG, "no PSRAM for frame buffer (%u bytes)", s_frame_bytes);

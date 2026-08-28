@@ -8,10 +8,9 @@
 
 static const char *TAG = "led_ctrl";
 
-/* ========== 硬件配置：接好线后修改这里 ==========
- * 注意：之前灯带显示混乱的根因是面包板走线串扰（LED 数据线与 TFT SPI 线
- * 平行导致），不是软件。走线分开后默认配置即可正常工作。 */
-#define LED_STRIP_GPIO     10      /* WS2812B 数据线所接 GPIO */
+/* ========== 硬件配置 ==========
+ * 注意：灯带数据线需远离屏幕 SPI 线（面包板平行走线会串扰导致数据错乱）*/
+#define LED_STRIP_GPIO     10      /* WS2812B 数据线 GPIO */
 #define LED_STRIP_LED_NUM  45      /* 灯珠数量 */
 
 static led_strip_handle_t s_strip;
@@ -28,12 +27,12 @@ esp_err_t led_ctrl_init(void)
         .led_model = LED_MODEL_WS2812,
         .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
     };
-    /* RMT 配置：组件默认值即可（走线串扰才是之前混乱的根因，与 RMT 配置无关）*/
+    /* RMT：DMA + 192 符号窗口——长灯带数据硬件无缝续流，动画流畅 */
     led_strip_rmt_config_t rmt_config = {
         .clk_src = RMT_CLK_SRC_DEFAULT,
         .resolution_hz = 10 * 1000 * 1000,  /* 10 MHz */
-        .mem_block_symbols = 0,             /* 默认 */
-        .flags = { .with_dma = 0 },
+        .mem_block_symbols = 192,
+        .flags = { .with_dma = true },
     };
 
     esp_err_t err = led_strip_new_rmt_device(&strip_config, &rmt_config, &s_strip);
