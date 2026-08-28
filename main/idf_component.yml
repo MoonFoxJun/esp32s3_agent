@@ -1,0 +1,6 @@
+dependencies:
+  espressif/cjson: "*"
+  espressif/led_strip: "^3.0.0"
+  espressif/lua: "*"
+  espressif/esp_websocket_client: "*"
+  espressif/esp_jpeg: "*"

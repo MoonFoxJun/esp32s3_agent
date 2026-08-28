@@ -1,0 +1,32 @@
+# ========== ESP32-S3 N16R8 自定义配置（sdkconfig.defaults）==========
+# 说明：16MB 闪存 + 8MB PSRAM 硬件解锁；不做体积瘦身，保持标准配置便于学习对照官方文档。
+# PSRAM 启用但默认分配走内部 RAM（稳定优先；大缓冲需要时再用 heap_caps_malloc 显式申请 PSRAM）。
+
+# --- 闪存：16MB QIO 80MHz（N16R8）---
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+
+# --- 分区表：自定义，双 OTA 槽（见 partitions_16MB.csv）---
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_16MB.csv"
+
+# --- PSRAM：8MB Octal，仅显式申请时使用（默认 malloc 走内部 RAM）---
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_SPIRAM_USE_CAPS_ALLOC=y
+CONFIG_SPIRAM_MEMTEST=n
+
+# --- TLS：支持交叉签名证书链（QQ/腾讯等新中间证书需要；esp-claw 同款配置）---
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_CROSS_SIGNED_VERIFY=y
+
+# --- TLS 大缓冲放 PSRAM ---
+# 内部 RAM 只有 512KB：QQ WebSocket 的 TLS + LLM 请求的 TLS 同时存在时，
+# 握手会请不到内存（报 -0x008D = PSA_ERROR_INSUFFICIENT_MEMORY）。
+# 让 mbedtls 从 PSRAM 分配，把内部 RAM 留给系统/任务。
+CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
+
+# --- FreeRTOS 任务统计（device_info 工具用）---
+# 启用 uxTaskGetSystemState：体检每个任务的栈余量，栈该设多大靠数据不靠猜。
+CONFIG_FREERTOS_USE_TRACE_FACILITY=y
